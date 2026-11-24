@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 760" font-family="Helvetica, Arial, sans-serif" font-size="14">
+  <defs>
+    <marker id="a" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#333"/></marker>
+    <marker id="r" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto"><path d="M0,0 L10,4 L0,8 z" fill="#c0392b"/></marker>
+  </defs>
+  <rect width="1100" height="760" fill="#fff"/>
+  <text x="550" y="30" text-anchor="middle" font-size="20" font-weight="bold">Pesebre API · Escenario C · Arquitectura</text>
+
+  <rect x="40" y="70" width="170" height="60" rx="8" fill="#e8f0fe" stroke="#3367d6"/>
+  <text x="125" y="95" text-anchor="middle" font-weight="bold">Cliente</text><text x="125" y="115" text-anchor="middle">Postman</text>
+
+  <rect x="270" y="60" width="560" height="640" rx="12" fill="#fafafa" stroke="#999" stroke-dasharray="6 4"/>
+  <text x="290" y="82" font-weight="bold">API Express (src/app.js, puerto 3000)</text>
+
+  <rect x="300" y="100" width="500" height="50" rx="8" fill="#fff4e5" stroke="#e08a00"/>
+  <text x="550" y="122" text-anchor="middle" font-weight="bold">Punto de entrada · express.json() · /api/*</text>
+  <text x="550" y="140" text-anchor="middle" font-size="12">src/app.js</text>
+
+  <rect x="300" y="175" width="500" height="55" rx="8" fill="#fde8e8" stroke="#c0392b"/>
+  <text x="550" y="197" text-anchor="middle" font-weight="bold">Middleware de seguridad (JWT)</text>
+  <text x="550" y="216" text-anchor="middle" font-size="12">autenticar → 401 · requerirRol(ENCARGADO_PESEBRE) → 403 · middleware/auth.js</text>
+
+  <rect x="300" y="255" width="500" height="50" rx="8" fill="#e6f4ea" stroke="#2e7d32"/>
+  <text x="550" y="277" text-anchor="middle" font-weight="bold">Rutas</text>
+  <text x="550" y="295" text-anchor="middle" font-size="12">recursos.routes · animales.routes · pesebre.routes</text>
+
+  <rect x="300" y="330" width="500" height="55" rx="8" fill="#e6f4ea" stroke="#2e7d32"/>
+  <text x="550" y="352" text-anchor="middle" font-weight="bold">Controladores (delgados)</text>
+  <text x="550" y="370" text-anchor="middle" font-size="12">validan formato (400) · eligen código HTTP (200/201/202/204)</text>
+
+  <rect x="300" y="410" width="500" height="70" rx="8" fill="#e6f4ea" stroke="#2e7d32"/>
+  <text x="550" y="432" text-anchor="middle" font-weight="bold">Servicios (reglas de negocio)</text>
+  <text x="550" y="451" text-anchor="middle" font-size="12">RecursosService: estado, consumo 409, reabastecer 422/202, borrar 409</text>
+  <text x="550" y="468" text-anchor="middle" font-size="12">AnimalesService: alimentar 409/422 · PesebreService: resumen</text>
+
+  <rect x="300" y="520" width="230" height="60" rx="8" fill="#e6f4ea" stroke="#2e7d32"/>
+  <text x="415" y="545" text-anchor="middle" font-weight="bold">Repositorios</text>
+  <text x="415" y="563" text-anchor="middle" font-size="12">en memoria (Map)</text>
+
+  <rect x="570" y="520" width="230" height="60" rx="8" fill="#ede7f6" stroke="#5e35b1"/>
+  <text x="685" y="545" text-anchor="middle" font-weight="bold">MercadoAdapter</text>
+  <text x="685" y="563" text-anchor="middle" font-size="12">XML a objeto de dominio · timeout 3 s</text>
+
+  <rect x="300" y="610" width="500" height="70" rx="8" fill="#fde8e8" stroke="#c0392b"/>
+  <text x="550" y="633" text-anchor="middle" font-weight="bold">Manejador global de errores</text>
+  <text x="550" y="652" text-anchor="middle" font-size="12">AppError → {codigo, mensaje, detalles, timestamp, ruta}</text>
+  <text x="550" y="669" text-anchor="middle" font-size="12">middleware/errorHandler.js · 404 de rutas desconocidas</text>
+
+  <rect x="890" y="520" width="170" height="60" rx="8" fill="#ede7f6" stroke="#5e35b1"/>
+  <text x="975" y="545" text-anchor="middle" font-weight="bold">MercadoBelenService</text>
+  <text x="975" y="563" text-anchor="middle" font-size="12">SOAP · ConsultarExistencias</text>
+
+  <rect x="860" y="400" width="210" height="95" rx="8" fill="#fff" stroke="#c0392b" stroke-width="2"/>
+  <text x="965" y="422" text-anchor="middle" font-weight="bold" fill="#c0392b">Manejo del fallo SOAP</text>
+  <text x="965" y="441" text-anchor="middle" font-size="12">Fault o sin respuesta en 3 s</text>
+  <text x="965" y="458" text-anchor="middle" font-size="12">→ MercadoNoDisponibleError</text>
+  <text x="965" y="475" text-anchor="middle" font-size="12">servicio: estado PENDIENTE,</text>
+  <text x="965" y="489" text-anchor="middle" font-size="12">cantidad igual → 202</text>
+
+  <!-- flechas peticion -->
+  <line x1="210" y1="100" x2="300" y2="125" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="550" y1="150" x2="550" y2="175" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="550" y1="230" x2="550" y2="255" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="550" y1="305" x2="550" y2="330" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="550" y1="385" x2="550" y2="410" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="460" y1="480" x2="425" y2="520" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="640" y1="480" x2="675" y2="520" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="800" y1="550" x2="890" y2="550" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+  <text x="845" y="542" text-anchor="middle" font-size="11">SOAP/HTTP</text>
+
+  <!-- fallo -->
+  <path d="M975 520 L975 495" stroke="#c0392b" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#r)"/>
+  <path d="M860 488 L770 488 L770 520" stroke="#c0392b" stroke-width="2" stroke-dasharray="5 3" fill="none" marker-end="url(#r)"/>
+  <text x="815" y="508" text-anchor="middle" font-size="11" fill="#c0392b">se captura aquí</text>
+
+  <!-- errores al manejador -->
+  <path d="M300 440 L270 440 L270 640 L300 640" stroke="#c0392b" stroke-width="2" stroke-dasharray="5 3" fill="none" marker-end="url(#r)"/>
+  <path d="M300 205 L285 205 L285 640" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/>
+  <!-- respuesta -->
+  <path d="M300 660 L240 660 L240 130 L210 115" stroke="#2e7d32" stroke-width="2" fill="none" marker-end="url(#a)"/>
+  <text x="228" y="400" font-size="11" fill="#2e7d32" transform="rotate(-90 228 400)" text-anchor="middle">respuesta JSON (2xx / error estándar)</text>
+
+  <text x="40" y="735" font-size="12" fill="#555">Flecha negra: sentido de la llamada · Flecha roja discontinua: errores y fallo del servicio externo · Verde: respuesta al cliente</text>
+</svg>

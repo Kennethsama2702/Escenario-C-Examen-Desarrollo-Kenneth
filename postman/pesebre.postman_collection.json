@@ -1,0 +1,1065 @@
+{
+  "info": {
+    "name": "Pesebre - Escenario C",
+    "description": "Reiniciar la API (y tener el mock SOAP arriba) antes de correr la colección completa. El orden importa: cada carpeta usa variables creadas por sus primeras peticiones.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Recursos",
+      "item": [
+        {
+          "name": "01 Crear recurso (201)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"nombrePaja\", \"Paja del establo \" + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const r = pm.response.json();",
+                  "pm.collectionVariables.set(\"recursoId\", r.id);",
+                  "pm.test(\"estado calculado DISPONIBLE\", () => pm.expect(r.estado).to.eql(\"DISPONIBLE\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEncargado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{nombrePaja}}\",\n  \"categoria\": \"PAJA\",\n  \"cantidad\": 10,\n  \"stockMinimo\": 5\n}"
+            }
+          }
+        },
+        {
+          "name": "02 Ver detalle (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"id coincide\", () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get(\"recursoId\")));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos/{{recursoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos",
+                "{{recursoId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "03 Listar con filtros (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"todos PAJA/DISPONIBLE\", () => pm.response.json().forEach(r => { pm.expect(r.categoria).to.eql(\"PAJA\"); pm.expect(r.estado).to.eql(\"DISPONIBLE\"); }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos?categoria=PAJA&estado=DISPONIBLE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos"
+              ],
+              "query": [
+                {
+                  "key": "categoria",
+                  "value": "PAJA"
+                },
+                {
+                  "key": "estado",
+                  "value": "DISPONIBLE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "04 Entrada inválida (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "const e = pm.response.json();",
+                  "pm.test(\"Formato único de error\", () => pm.expect(e).to.have.all.keys(\"codigo\",\"mensaje\",\"detalles\",\"timestamp\",\"ruta\"));",
+                  "pm.test(\"codigo = FORMATO_INVALIDO\", () => pm.expect(e.codigo).to.eql(\"FORMATO_INVALIDO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEncargado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"x\",\n  \"categoria\": \"ORO\",\n  \"cantidad\": -1,\n  \"stockMinimo\": 0\n}"
+            }
+          }
+        },
+        {
+          "name": "05 Recurso inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "const e = pm.response.json();",
+                  "pm.test(\"Formato único de error\", () => pm.expect(e).to.have.all.keys(\"codigo\",\"mensaje\",\"detalles\",\"timestamp\",\"ruta\"));",
+                  "pm.test(\"codigo = NO_ENCONTRADO\", () => pm.expect(e.codigo).to.eql(\"NO_ENCONTRADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          }
+        },
+        {
+          "name": "06 Sin token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "const e = pm.response.json();",
+                  "pm.test(\"Formato único de error\", () => pm.expect(e).to.have.all.keys(\"codigo\",\"mensaje\",\"detalles\",\"timestamp\",\"ruta\"));",
+                  "pm.test(\"codigo = NO_AUTENTICADO\", () => pm.expect(e.codigo).to.eql(\"NO_AUTENTICADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Sin token\",\n  \"categoria\": \"AGUA\",\n  \"cantidad\": 1,\n  \"stockMinimo\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "07 Rol insuficiente - PASTOR (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "const e = pm.response.json();",
+                  "pm.test(\"Formato único de error\", () => pm.expect(e).to.have.all.keys(\"codigo\",\"mensaje\",\"detalles\",\"timestamp\",\"ruta\"));",
+                  "pm.test(\"codigo = ROL_INSUFICIENTE\", () => pm.expect(e.codigo).to.eql(\"ROL_INSUFICIENTE\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenPastor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Con rol equivocado\",\n  \"categoria\": \"AGUA\",\n  \"cantidad\": 1,\n  \"stockMinimo\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "08 Consumo que deja negativo (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", () => pm.response.to.have.status(409));",
+                  "const e = pm.response.json();",
+                  "pm.test(\"Formato único de error\", () => pm.expect(e).to.have.all.keys(\"codigo\",\"mensaje\",\"detalles\",\"timestamp\",\"ruta\"));",
+                  "pm.test(\"codigo = STOCK_INSUFICIENTE\", () => pm.expect(e.codigo).to.eql(\"STOCK_INSUFICIENTE\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEncargado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos/{{recursoId}}/consumo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos",
+                "{{recursoId}}",
+                "consumo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 11\n}"
+            }
+          }
+        },
+        {
+          "name": "09 Consumo válido (200) -> BAJO_STOCK",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test(\"cantidad 4\", () => pm.expect(r.cantidad).to.eql(4));",
+                  "pm.test(\"estado BAJO_STOCK\", () => pm.expect(r.estado).to.eql(\"BAJO_STOCK\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEncargado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos/{{recursoId}}/consumo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos",
+                "{{recursoId}}",
+                "consumo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 6\n}"
+            }
+          }
+        },
+        {
+          "name": "10 Reabastecer: SOAP responde SIN_EXISTENCIAS (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "const e = pm.response.json();",
+                  "pm.test(\"Formato único de error\", () => pm.expect(e).to.have.all.keys(\"codigo\",\"mensaje\",\"detalles\",\"timestamp\",\"ruta\"));",
+                  "pm.test(\"codigo = SIN_EXISTENCIAS\", () => pm.expect(e.codigo).to.eql(\"SIN_EXISTENCIAS\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEncargado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos/{{recursoId}}/reabastecimiento",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos",
+                "{{recursoId}}",
+                "reabastecimiento"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 500\n}"
+            }
+          }
+        },
+        {
+          "name": "11 Reabastecer: SOAP responde DISPONIBLE (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"cantidad 24\", () => pm.expect(pm.response.json().cantidad).to.eql(24));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEncargado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos/{{recursoId}}/reabastecimiento",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos",
+                "{{recursoId}}",
+                "reabastecimiento"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 20\n}"
+            }
+          }
+        },
+        {
+          "name": "12 Reabastecer: SOAP caído, cantidad 999 (202)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 202\", () => pm.response.to.have.status(202));",
+                  "const r = pm.response.json().recurso;",
+                  "pm.test(\"cantidad sin cambios\", () => pm.expect(r.cantidad).to.eql(24));",
+                  "pm.test(\"REABASTECIMIENTO_PENDIENTE\", () => pm.expect(r.estado).to.eql(\"REABASTECIMIENTO_PENDIENTE\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEncargado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos/{{recursoId}}/reabastecimiento",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos",
+                "{{recursoId}}",
+                "reabastecimiento"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cantidad\": 999\n}"
+            }
+          }
+        },
+        {
+          "name": "13 Eliminar con cantidad > 0 (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", () => pm.response.to.have.status(409));",
+                  "const e = pm.response.json();",
+                  "pm.test(\"Formato único de error\", () => pm.expect(e).to.have.all.keys(\"codigo\",\"mensaje\",\"detalles\",\"timestamp\",\"ruta\"));",
+                  "pm.test(\"codigo = RECURSO_CON_EXISTENCIAS\", () => pm.expect(e.codigo).to.eql(\"RECURSO_CON_EXISTENCIAS\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEncargado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos/{{recursoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos",
+                "{{recursoId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "14a Crear recurso con cantidad 0 (201)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"nombreManta\", \"Manta vacía \" + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"recursoVacioId\", pm.response.json().id);",
+                  "pm.test(\"AGOTADO\", () => pm.expect(pm.response.json().estado).to.eql(\"AGOTADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEncargado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{nombreManta}}\",\n  \"categoria\": \"MANTA\",\n  \"cantidad\": 0,\n  \"stockMinimo\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "14b Eliminar con cantidad 0 (204)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEncargado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos/{{recursoVacioId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos",
+                "{{recursoVacioId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Animales y extra",
+      "item": [
+        {
+          "name": "15 Crear recurso de alimento (201)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"nombreHeno\", \"Heno \" + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"alimentoId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenEncargado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/recursos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "recursos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{nombreHeno}}\",\n  \"categoria\": \"ALIMENTO_ANIMALES\",\n  \"cantidad\": 5,\n  \"stockMinimo\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "16 Registrar animal inválido (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", () => pm.response.to.have.status(400));",
+                  "const e = pm.response.json();",
+                  "pm.test(\"Formato único de error\", () => pm.expect(e).to.have.all.keys(\"codigo\",\"mensaje\",\"detalles\",\"timestamp\",\"ruta\"));",
+                  "pm.test(\"codigo = FORMATO_INVALIDO\", () => pm.expect(e.codigo).to.eql(\"FORMATO_INVALIDO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"\",\n  \"especie\": \"GATO\",\n  \"racionDiaria\": 11\n}"
+            }
+          }
+        },
+        {
+          "name": "17 Registrar animal (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"animalId\", pm.response.json().id);",
+                  "pm.test(\"sin alimentar\", () => pm.expect(pm.response.json().ultimaAlimentacion).to.eql(null));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Bueyito\",\n  \"especie\": \"BUEY\",\n  \"racionDiaria\": 3\n}"
+            }
+          }
+        },
+        {
+          "name": "18 Listar animales ?especie=BUEY (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"solo BUEY\", () => pm.response.json().forEach(a => pm.expect(a.especie).to.eql(\"BUEY\")));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales?especie=BUEY",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales"
+              ],
+              "query": [
+                {
+                  "key": "especie",
+                  "value": "BUEY"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "19 Alimentar (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"ultimaAlimentacion llena\", () => pm.expect(pm.response.json().ultimaAlimentacion).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales/{{animalId}}/alimentacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales",
+                "{{animalId}}",
+                "alimentacion"
+              ]
+            }
+          }
+        },
+        {
+          "name": "20 Alimentar otra vez el mismo día (422)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "const e = pm.response.json();",
+                  "pm.test(\"Formato único de error\", () => pm.expect(e).to.have.all.keys(\"codigo\",\"mensaje\",\"detalles\",\"timestamp\",\"ruta\"));",
+                  "pm.test(\"codigo = ANIMAL_YA_ALIMENTADO\", () => pm.expect(e.codigo).to.eql(\"ANIMAL_YA_ALIMENTADO\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales/{{animalId}}/alimentacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales",
+                "{{animalId}}",
+                "alimentacion"
+              ]
+            }
+          }
+        },
+        {
+          "name": "21a Registrar segundo animal (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"animal2Id\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Mula Rosa\",\n  \"especie\": \"MULA\",\n  \"racionDiaria\": 3\n}"
+            }
+          }
+        },
+        {
+          "name": "21b Alimentar sin stock suficiente (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", () => pm.response.to.have.status(409));",
+                  "const e = pm.response.json();",
+                  "pm.test(\"Formato único de error\", () => pm.expect(e).to.have.all.keys(\"codigo\",\"mensaje\",\"detalles\",\"timestamp\",\"ruta\"));",
+                  "pm.test(\"codigo = STOCK_INSUFICIENTE\", () => pm.expect(e.codigo).to.eql(\"STOCK_INSUFICIENTE\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/animales/{{animal2Id}}/alimentacion",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "animales",
+                "{{animal2Id}}",
+                "alimentacion"
+              ]
+            }
+          }
+        },
+        {
+          "name": "22 Extra: resumen del pesebre (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test(\"campos del resumen\", () => pm.expect(r).to.have.all.keys(\"recursosCriticos\",\"animalesSinAlimentarHoy\",\"listo\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pesebre/resumen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pesebre",
+                "resumen"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "recursoId",
+      "value": ""
+    },
+    {
+      "key": "recursoVacioId",
+      "value": ""
+    },
+    {
+      "key": "alimentoId",
+      "value": ""
+    },
+    {
+      "key": "animalId",
+      "value": ""
+    },
+    {
+      "key": "animal2Id",
+      "value": ""
+    },
+    {
+      "key": "nombrePaja",
+      "value": ""
+    },
+    {
+      "key": "nombreManta",
+      "value": ""
+    },
+    {
+      "key": "nombreHeno",
+      "value": ""
+    }
+  ]
+}
