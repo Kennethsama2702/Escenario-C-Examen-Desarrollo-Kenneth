@@ -1,8 +1,8 @@
-# API de gestión de recursos del pesebre (Escenario C)
+# API de gestión de recursos del pesebre
 
-API REST en Node.js (Express) que administra los recursos del pesebre de Belén y a sus animales. Para reabastecer consulta el servicio SOAP heredado `MercadoBelenService` a través de un adaptador y sigue funcionando cuando ese servicio falla.
+Escenario resuelto: **C**.
 
-**Escenario resuelto: C.** Incluye el extra `GET /api/pesebre/resumen`.
+API REST en Node.js (Express) que administra los recursos del pesebre de Belén y a sus animales. Para reabastecer consulta el servicio SOAP heredado `MercadoBelenService` a través de un adaptador y sigue respondiendo cuando ese servicio falla. Incluye el extra `GET /api/pesebre/resumen`.
 
 ## Cómo levantar el proyecto
 
@@ -10,53 +10,63 @@ Requiere Node.js 20 o superior.
 
 ```bash
 npm install
-cp .env.example .env        # y ajusta los valores si hace falta
-npm start                   # API en http://localhost:3000
+cp .env.example .env
+npm start
 ```
 
-Por defecto la API espera el SOAP en `http://localhost:4000/mercado`. Hay dos opciones:
+La API queda en `http://localhost:3000`. Los datos se guardan en memoria.
 
-- **Mock del docente:** pon su endpoint en `MERCADO_SOAP_URL` dentro de `.env`.
-- **Mock local** (para desarrollar sin red): `npm run mock` en otra terminal. Se comporta así: cantidad `999` devuelve el `soap:Fault` "Mercado cerrado", `998` no responde (prueba del timeout), cantidad mayor a `100` devuelve `SIN_EXISTENCIAS` y cualquier otra `DISPONIBLE`. El umbral de 100 es una convención de este mock; el del docente solo garantiza el `999`.
+Servicio SOAP: la API lo consume en la URL definida en `MERCADO_SOAP_URL`.
 
-Pruebas automáticas (levantan su propio mock y la API en puertos libres): `npm test`.
+- Con el mock del docente: poner su endpoint en `MERCADO_SOAP_URL` dentro de `.env`.
+- Con el mock local incluido: `npm run mock` en otra terminal (escucha en `http://localhost:4000/mercado`). Cantidad `999` devuelve el `soap:Fault` "Mercado cerrado", `998` no responde (prueba del timeout), mayor a `100` devuelve `SIN_EXISTENCIAS` y cualquier otra `DISPONIBLE`.
+
+Pruebas automáticas: `npm test` (levantan su propio mock y su propia API).
 
 ## Variables de entorno
 
-| Variable             | Descripción                                           | Valor en `.env.example`         |
-| -------------------- | ----------------------------------------------------- | ------------------------------- |
-| `PORT`               | Puerto de la API                                      | `3000`                          |
-| `JWT_SECRET`         | Secreto para firmar y verificar los JWT               | marcador de posición, cámbialo  |
-| `MERCADO_SOAP_URL`   | Endpoint del servicio SOAP                            | `http://localhost:4000/mercado` |
-| `MERCADO_TIMEOUT_MS` | Tiempo máximo de espera al SOAP                       | `3000`                          |
-| `APP_TIMEZONE`       | Zona horaria para decidir "el mismo día" al alimentar | `America/Guayaquil`             |
+| Variable             | Descripción                                           | Valor en `.env.example`             |
+| -------------------- | ----------------------------------------------------- | ----------------------------------- |
+| `PORT`               | Puerto de la API                                      | `3000`                              |
+| `JWT_SECRET`         | Secreto para firmar y verificar los JWT               | `cambia-este-secreto-en-tu-entorno` |
+| `MERCADO_SOAP_URL`   | Endpoint del servicio SOAP                            | `http://localhost:4000/mercado`     |
+| `MERCADO_TIMEOUT_MS` | Tiempo máximo de espera al SOAP                       | `3000`                              |
+| `APP_TIMEZONE`       | Zona horaria para decidir "el mismo día" al alimentar | `America/Guayaquil`                 |
 
-El archivo `.env` está en `.gitignore`. Solo se versiona `.env.example`.
+El archivo `.env` no se versiona (está en `.gitignore`). Solo se incluye `.env.example`.
 
 ## Usuarios y tokens de prueba
 
-La autenticación usa JWT (HS256) en el header `Authorization: Bearer <token>`; el rol va en el claim `rol`. Solo `ENCARGADO_PESEBRE` puede escribir sobre recursos; cualquier otro rol (`PASTOR`, `PAJE`, `ELFO`, `AYUDANTE`) recibe 403 y una petición sin token recibe 401.
+La autenticación usa JWT (HS256) en el header `Authorization: Bearer <token>`. El rol va en el claim `rol`.
 
-Para generar tokens con tu propio `JWT_SECRET`: `npm run tokens`.
+| Rol                                  | Acceso                                                                        |
+| ------------------------------------ | ----------------------------------------------------------------------------- |
+| `ENCARGADO_PESEBRE`                  | Crear, consumir, reabastecer y eliminar recursos                              |
+| `PASTOR`, `PAJE`, `ELFO`, `AYUDANTE` | Token válido, pero reciben 403 en los endpoints de recursos que requieren rol |
 
-`postman/pesebre.postman_environment.json` trae tokens de `ENCARGADO_PESEBRE` y `PASTOR` firmados con el valor de `JWT_SECRET` de `.env.example`. Funcionan si copiaste ese archivo a `.env` sin cambiar el secreto. Si lo cambias, regenera el entorno con `npm run postman`.
+Sin token, los endpoints protegidos responden 401.
+
+Tokens de prueba:
+
+- `postman/pesebre.postman_environment.json` incluye los tokens `tokenEncargado` (`ENCARGADO_PESEBRE`) y `tokenPastor` (`PASTOR`), firmados con el `JWT_SECRET` de `.env.example`. Funcionan con `.env` copiado de `.env.example` sin modificar.
+- Con otro `JWT_SECRET`, `npm run tokens` imprime un token por cada rol, firmado con el secreto de `.env`.
 
 ## Endpoints
 
-| Método | Ruta                                  | Respuestas                      | Acceso            |
-| ------ | ------------------------------------- | ------------------------------- | ----------------- |
-| POST   | `/api/recursos`                       | 201, 400, 409 (nombre repetido) | ENCARGADO_PESEBRE |
-| GET    | `/api/recursos?categoria=&estado=`    | 200, 400                        | pública           |
-| GET    | `/api/recursos/{id}`                  | 200, 404                        | pública           |
-| PATCH  | `/api/recursos/{id}/consumo`          | 200, 400, 404, 409              | ENCARGADO_PESEBRE |
-| PATCH  | `/api/recursos/{id}/reabastecimiento` | 200, 202, 400, 404, 422         | ENCARGADO_PESEBRE |
-| DELETE | `/api/recursos/{id}`                  | 204, 404, 409                   | ENCARGADO_PESEBRE |
-| POST   | `/api/animales`                       | 201, 400                        | pública           |
-| GET    | `/api/animales?especie=`              | 200, 400                        | pública           |
-| PATCH  | `/api/animales/{id}/alimentacion`     | 200, 404, 409, 422              | pública           |
-| GET    | `/api/pesebre/resumen` (extra)        | 200                             | pública           |
+| Método | Ruta                                  | Respuestas                                | Acceso            |
+| ------ | ------------------------------------- | ----------------------------------------- | ----------------- |
+| POST   | `/api/recursos`                       | 201, 400, 401, 403, 409 (nombre repetido) | ENCARGADO_PESEBRE |
+| GET    | `/api/recursos?categoria=&estado=`    | 200, 400                                  | pública           |
+| GET    | `/api/recursos/{id}`                  | 200, 404                                  | pública           |
+| PATCH  | `/api/recursos/{id}/consumo`          | 200, 400, 401, 403, 404, 409              | ENCARGADO_PESEBRE |
+| PATCH  | `/api/recursos/{id}/reabastecimiento` | 200, 202, 400, 401, 403, 404, 422         | ENCARGADO_PESEBRE |
+| DELETE | `/api/recursos/{id}`                  | 204, 401, 403, 404, 409                   | ENCARGADO_PESEBRE |
+| POST   | `/api/animales`                       | 201, 400                                  | pública           |
+| GET    | `/api/animales?especie=`              | 200, 400                                  | pública           |
+| PATCH  | `/api/animales/{id}/alimentacion`     | 200, 404, 409, 422                        | pública           |
+| GET    | `/api/pesebre/resumen` (extra)        | 200                                       | pública           |
 
-Todos los errores tienen la misma forma:
+Todas las respuestas de error usan la misma estructura:
 
 ```json
 {
@@ -64,32 +74,48 @@ Todos los errores tienen la misma forma:
   "mensaje": "Quedan 4 unidades y se piden 5",
   "detalles": [],
   "timestamp": "2026-12-01T10:15:00.000Z",
-  "ruta": "/api/recursos/…/consumo"
+  "ruta": "/api/recursos/{id}/consumo"
 }
 ```
 
-### Decisiones que conviene conocer
+Reglas de negocio implementadas:
 
-- Un consumo o reabastecimiento exige `cantidad` entera ≥ 1; si no, 400.
-- Alimentar usa el primer recurso de categoría `ALIMENTO_ANIMALES`. Si no hay ninguno registrado, responde 409.
-- Al alimentar se comprueba primero la regla del día (422) y luego el stock (409).
-- "El mismo día" se calcula en la zona `APP_TIMEZONE`, no en UTC.
-- El estado se recalcula con cada cambio de cantidad. Si el reabastecimiento falla, el recurso queda en `REABASTECIMIENTO_PENDIENTE` hasta el siguiente consumo o reabastecimiento exitoso.
-- La persistencia es en memoria: al reiniciar la API se pierden los datos.
+- El estado del recurso lo calcula el sistema en cada cambio de cantidad: `0` es `AGOTADO`, menor que `stockMinimo` es `BAJO_STOCK` y en otro caso `DISPONIBLE`.
+- Un consumo que deje la cantidad en negativo responde 409.
+- Alimentar descuenta la `racionDiaria` del recurso de categoría `ALIMENTO_ANIMALES`. Si no alcanza (o no hay ninguno registrado) responde 409 y no descuenta nada.
+- Un animal no se alimenta dos veces el mismo día (422). El día se calcula en `APP_TIMEZONE`.
+- Reabastecer consulta el SOAP: `SIN_EXISTENCIAS` responde 422, `DISPONIBLE` suma la cantidad pedida.
+- No se elimina un recurso con cantidad mayor a 0 (409).
+- Consumo y reabastecimiento exigen `cantidad` entera mayor o igual a 1.
 
 ## Arquitectura
 
 ![Diagrama de arquitectura](docs/arquitectura.png)
 
-(Fuente editable: [`docs/arquitectura.svg`](docs/arquitectura.svg).)
+Fuente editable: [`docs/arquitectura.svg`](docs/arquitectura.svg).
 
-Una petición recorre: **rutas** (`src/routes`, aplican seguridad) → **controladores** (`src/controllers`, validan el formato y eligen el código HTTP) → **servicios** (`src/services`, donde viven todas las reglas de negocio) → **repositorios** (`src/repositories`, datos en memoria). El servicio de recursos llama a `MercadoAdapter` (`src/adapters`), la única clase que conoce el XML del SOAP. Todos los errores terminan en el manejador global (`src/middleware/errorHandler.js`).
+Una petición recorre las capas **rutas → controladores → servicios → repositorios**:
 
-**Fallo del SOAP.** El adaptador convierte un `soap:Fault`, un timeout de 3 s, un error de red o una respuesta ilegible en `MercadoNoDisponibleError`. `RecursosService.reabastecer` lo captura, deja el recurso en `REABASTECIMIENTO_PENDIENTE` sin tocar la cantidad y el controlador responde 202. Un error del SOAP nunca llega al cliente como 500.
+| Capa           | Carpeta                           | Responsabilidad                                                     |
+| -------------- | --------------------------------- | ------------------------------------------------------------------- |
+| Entrada        | `src/app.js`                      | Arma las dependencias, registra las rutas y el manejador de errores |
+| Seguridad      | `src/middleware/auth.js`          | Verifica el JWT (401) y el rol (403)                                |
+| Rutas          | `src/routes`                      | Asocian método y URL con un controlador y aplican la seguridad      |
+| Controladores  | `src/controllers`                 | Validan el formato de la entrada (400) y eligen el código HTTP      |
+| Servicios      | `src/services`                    | Contienen todas las reglas de negocio                               |
+| Repositorios   | `src/repositories`                | Almacenamiento en memoria                                           |
+| Adaptador SOAP | `src/adapters/mercado.adapter.js` | Traduce XML a objeto de dominio; es el único código que conoce XML  |
+| Errores        | `src/middleware/errorHandler.js`  | Manejador global con el formato único de error                      |
+
+### Fallo del servicio SOAP
+
+El adaptador convierte un `soap:Fault`, una espera mayor a 3 segundos, un error de red o una respuesta ilegible en un `MercadoNoDisponibleError`. `RecursosService.reabastecer` lo captura, deja el recurso en `REABASTECIMIENTO_PENDIENTE` sin modificar la cantidad y el controlador responde 202 Accepted indicando que el reabastecimiento se confirmará después. El fallo del servicio externo no produce respuestas 500.
 
 ## Colección de Postman
 
-Importa `postman/pesebre.postman_collection.json` y `postman/pesebre.postman_environment.json`. Reinicia la API antes de correrla completa (los datos son en memoria y alimentar usa el primer recurso de alimento). Cubre 200/201, 400, 401, 403, 404, 409, 422 y el SOAP caído con respuesta 202, con aserciones en cada petición. Desde consola:
+Archivos en `postman/`: `pesebre.postman_collection.json` y `pesebre.postman_environment.json`.
+
+Cubre 200/201, 400, 401, 403, 404, 409, 422 y el SOAP caído (202), con aserciones en cada petición. Para ejecutarla completa, iniciar la API (y el mock SOAP) sin datos previos y correrla en orden:
 
 ```bash
 npx newman run postman/pesebre.postman_collection.json -e postman/pesebre.postman_environment.json
